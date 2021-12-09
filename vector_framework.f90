@@ -18,6 +18,10 @@ module vectors
         module procedure scalarprod
     end interface
 
+    interface assignment(=)
+        module procedure scalar_to_vec
+    end interface
+
 contains
     function vadd(a, b) result(c)
         type(vec), intent(in) :: a, b
@@ -50,4 +54,13 @@ contains
 
         b = sqrt(a * a)
     end function norm
+
+    subroutine scalar_to_vec(a, b)
+        type(vec), intent(inout) :: a
+        real(rk), intent(in) :: b
+
+        a%x = b
+        a%y = b
+        a%z = b
+    end subroutine scalar_to_vec
 end module vectors
