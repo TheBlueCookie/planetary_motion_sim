@@ -17,7 +17,7 @@ module vectors
     interface operator(*)
         module procedure scalarprod
         module procedure scalar_mult_a
-        module procedure scalar_mult_ba
+        module procedure scalar_mult_b
     end interface
 
     interface assignment(=)
