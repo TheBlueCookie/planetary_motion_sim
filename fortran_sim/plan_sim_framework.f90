@@ -2,17 +2,19 @@ module plan_sim
     use vectors
     use io_manager
 
-    type :: verlet_solution(nbody, nstep)
-        integer, len :: nbody
-        integer, len :: nstep
-        type(vec), dimension(nbody, nstep) :: pos, vel, acc, forces
-    end type verlet_solution
+    type(vec), dimension(:, :), allocatable :: pos, vel, acc, forces
+    logical :: init_status = .false.
 
-!    type(vec), dimension(nbody, nstep) :: pos, vel, acc, forces
-
-    real(rk), parameter :: g = 1 !6.67430e-11 ! https://physics.nist.gov/cgi-bin/cuu/Value?bg
+    real(rk), parameter :: g = 6.67430e-11 ! https://physics.nist.gov/cgi-bin/cuu/Value?bg
 
 contains
+
+    subroutine initialize(nbody, nstep)
+        integer(ik), intent(in) :: nbody, nstep
+
+        allocate(pos(nbody, nstep), vel(nbody, nstep), acc(nbody, nstep), forces(nbody, nstep))
+        init_status = .true.
+    end subroutine initialize
 
     function get_mass_matrix(masses, nbody) result(mass_mat)
         real(rk), dimension(nbody), intent(in) :: masses
@@ -34,18 +36,14 @@ contains
     end function get_mass_matrix
 
 
-    function vel_verlet(ipos, ivel, masses, step, nstep, nbody) result(sol)
+    subroutine vel_verlet(ipos, ivel, masses, step, nstep, nbody)
         type(vec), dimension(nbody), intent(in) :: ipos, ivel
         real(rk), dimension(nbody), intent(in) :: masses
         real(rk), intent(in) :: step
-        integer(ik), intent(in) :: nstep, nbody
-        type(verlet_solution(nbody, nstep)) :: sol
         type(vec), dimension(nbody) :: force_vecs
         type(vec), dimension(nbody, nbody) :: dist_vecs
         real(rk), dimension(nbody, nbody) :: scal_dists_inv, mass_matrix
         integer(ik) :: i, m
-
-        write(6, *) nbody, nstep
 
         mass_matrix = get_mass_matrix(masses, nbody)
         dist_vecs = calc_distance_vecs(ipos, nbody)
@@ -53,10 +51,10 @@ contains
         force_vecs = calc_forces(dist_vecs, scal_dists_inv, mass_matrix, nbody)
 
         do i = 1, nbody
-            sol%pos(i, 1) = ipos(i)
-            sol%vel(i, 1) = ivel(i)
-            sol%acc(i, 1) = force_vecs(i) * (1 / masses(i))
-            sol%forces(i, 1) = force_vecs(i)
+            pos(i, 1) = ipos(i)
+            vel(i, 1) = ivel(i)
+            acc(i, 1) = force_vecs(i) * (1 / masses(i))
+            forces(i, 1) = force_vecs(i)
         end do
 
         do m = 2, nstep
@@ -70,20 +68,20 @@ contains
             integer(ik) :: i
 
             do i = 1, nbody
-                sol%pos(i, j) = sol%pos(i, j - 1) + sol%vel(i, j - 1) * step + &
-                        sol%forces(i, j - 1) * (1 / masses(i) * 0.5 * step ** 2)
+                pos(i, j) = pos(i, j - 1) + vel(i, j - 1) * step + &
+                        forces(i, j - 1) * (1 / masses(i) * 0.5 * step ** 2)
             end do
 
-            dist_vecs = calc_distance_vecs(sol%pos(:, j), nbody)
+            dist_vecs = calc_distance_vecs(pos(:, j), nbody)
             scal_dists_inv = calc_scalar_distances_inv(dist_vecs, nbody)
-            sol%forces(:, j) = calc_forces(dist_vecs, scal_dists_inv, mass_matrix, nbody)
+            forces(:, j) = calc_forces(dist_vecs, scal_dists_inv, mass_matrix, nbody)
 
             do i = 1, nbody
-                sol%acc(i, j) = sol%forces(i, j) * (1 / masses(i))
-                sol%vel(i, j) = sol%vel(i, j - 1) + (sol%acc(i, j - 1) + sol%acc(i, j)) * (step * 0.5)
+                acc(i, j) = forces(i, j) * (1 / masses(i))
+                vel(i, j) = vel(i, j - 1) + (acc(i, j - 1) + acc(i, j)) * (step * 0.5)
             end do
         end subroutine verlet_step
-    end function vel_verlet
+    end subroutine vel_verlet
 
     function calc_forces(vec_dists, scal_dists, mass_mat, nbody) result(res_forces)
         type(vec), dimension(nbody, nbody), intent(in) :: vec_dists
