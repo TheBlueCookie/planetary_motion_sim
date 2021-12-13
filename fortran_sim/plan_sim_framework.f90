@@ -4,17 +4,19 @@ module plan_sim
 
     type(vec), dimension(:, :), allocatable :: pos, vel, acc, forces
     logical :: init_status = .false.
+    integer(ik) :: savestep
 
     real(rk), parameter :: g = 6.67430e-11 ! https://physics.nist.gov/cgi-bin/cuu/Value?bg
 
 contains
 
-    subroutine initialize(nbody, nstep)
-        integer(ik), intent(in) :: nbody, nstep
+    subroutine initialize_sim(nbody, nstep, k)
+        integer(ik), intent(in) :: nbody, nstep, k
 
         allocate(pos(nbody, nstep), vel(nbody, nstep), acc(nbody, nstep), forces(nbody, nstep))
+        savestep = k
         init_status = .true.
-    end subroutine initialize
+    end subroutine initialize_sim
 
     function get_mass_matrix(masses, nbody) result(mass_mat)
         real(rk), dimension(nbody), intent(in) :: masses
@@ -36,14 +38,18 @@ contains
     end function get_mass_matrix
 
 
-    subroutine vel_verlet(ipos, ivel, masses, step, nstep, nbody)
+    subroutine vel_verlet(ipos, ivel, masses, step, nbody, nstep, savestep, fstep)
         type(vec), dimension(nbody), intent(in) :: ipos, ivel
         real(rk), dimension(nbody), intent(in) :: masses
         real(rk), intent(in) :: step
+        integer(ik), intent(in) :: nbody, nstep, savestep, fstep
         type(vec), dimension(nbody) :: force_vecs
         type(vec), dimension(nbody, nbody) :: dist_vecs
         real(rk), dimension(nbody, nbody) :: scal_dists_inv, mass_matrix
         integer(ik) :: i, m
+        character(len = 100) :: dirpath
+
+!        dirpath = prepare_subdir()
 
         mass_matrix = get_mass_matrix(masses, nbody)
         dist_vecs = calc_distance_vecs(ipos, nbody)
@@ -59,6 +65,12 @@ contains
 
         do m = 2, nstep
             call verlet_step(m)
+            !            if (modulo(m, savestep) == 0) then
+            !                call save_sim_step(pos(:, m), vel(:, m), acc(:, m), forces(:, m), nbody, dirpath)
+            !            end if
+            !            if (modulo(m, fstep) == 0) then
+            !                call print_sim_info(pos(:, m), nbody, nstep, m, step, savestep)
+            !            end if
         end do
 
     contains
