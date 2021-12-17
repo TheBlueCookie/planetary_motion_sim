@@ -3,18 +3,33 @@ module plan_sim
     use io_manager
 
     type(vec), dimension(:, :), allocatable :: pos, vel, acc, forces
+    real(rk), dimension(:), allocatable :: masses
+    real(rk) :: step, d_dur
+    integer(ik) :: n_step, n_body, f_step, s_step, savestep
+
     logical :: init_status = .false.
-    integer(ik) :: savestep
 
     real(rk), parameter :: g = 6.67430e-11 ! https://physics.nist.gov/cgi-bin/cuu/Value?bg
+    real(rk), parameter :: sec_per_day = 24 * 3600
 
 contains
 
-    subroutine initialize_sim(nbody, nstep, k)
-        integer(ik), intent(in) :: nbody, nstep, k
+    subroutine initialize_sim(parfile, nbody, nstep, fstep, sstep, step, ddur)
+        character(len = 120), intent(in) :: parfile
+        integer(ik), intent(inout) :: nbody, nstep, fstep, sstep
+        real(rk), intent(inout) :: ddur, step
+        real(rk) :: sdur
 
-        allocate(pos(nbody, nstep), vel(nbody, nstep), acc(nbody, nstep), forces(nbody, nstep))
-        savestep = k
+        call get_arr_dims(parfile, nbody, nstep)
+
+        allocate(pos(nbody, nstep), vel(nbody, nstep), acc(nbody, nstep), forces(nbody, nstep), masses(nstep))
+
+        call read_sim_params(parfile, nbody, masses, pos(:, 1), vel(:, 1), ddur, fstep, sstep, nstep)
+
+!        sdur = ddur * sec_per_day
+        step = ddur ! / nstep_rk
+
+        write(6, *) 'Initialized simulation.'
         init_status = .true.
     end subroutine initialize_sim
 
@@ -49,7 +64,7 @@ contains
         integer(ik) :: i, m
         character(len = 100) :: dirpath
 
-!        dirpath = prepare_subdir()
+        dirpath = prepare_subdir()
 
         mass_matrix = get_mass_matrix(masses, nbody)
         dist_vecs = calc_distance_vecs(ipos, nbody)
@@ -65,12 +80,12 @@ contains
 
         do m = 2, nstep
             call verlet_step(m)
-            !            if (modulo(m, savestep) == 0) then
-            !                call save_sim_step(pos(:, m), vel(:, m), acc(:, m), forces(:, m), nbody, dirpath)
-            !            end if
-            !            if (modulo(m, fstep) == 0) then
-            !                call print_sim_info(pos(:, m), nbody, nstep, m, step, savestep)
-            !            end if
+                        if (modulo(m, savestep) == 0) then
+                            call save_sim_step(pos(:, m), vel(:, m), acc(:, m), forces(:, m), nbody, dirpath)
+                        end if
+                        if (modulo(m, fstep) == 0) then
+                            call print_sim_info(pos(:, m), nbody, nstep, m, step, savestep)
+                        end if
         end do
 
     contains
