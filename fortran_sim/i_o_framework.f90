@@ -108,12 +108,66 @@ contains
         integer(ik), intent(in) :: nbody, nstep, cstep, savestep
         real(rk), intent(in) :: dt
 
-        write(6, '(a, i0, a, i0, a, i0)') 'INFO AT STEP ', cstep, ' / ', nstep, '. Simulation time: Day ', nint(cstep*dt / 86400)
+        write(6, '(a, i0, a, i0, a, i0)') 'INFO AT STEP ', cstep, ' / ', nstep, '. Simulation time: Day ', nint(cstep * dt / 86400)
         write(6, '(a, i0, a)') 'Simulating ', nbody, ' objects.'
-        write(6, '(a, i0, a)') 'Saved ', cstep/savestep, ' steps to file.'
+        write(6, '(a, i0, a)') 'Saved ', cstep / savestep, ' steps to file.'
         write(6, *) 'Current object positions: '
         call prettyprint_vec_arr(last_pos, nbody)
         ! write(6, *) '---------------------------------------------------'
-
     end subroutine print_sim_info
+
+    subroutine read_sim_params(fname, n, mass, ipos, ivel, ddur, fstep, sstep, nstep)
+        integer(ik), intent(in) :: n, nstep
+        integer(ik), intent(inout) :: fstep, sstep
+        type(vec), dimension(n), intent(inout) :: ipos, ivel
+        real(rk), dimension(n), intent(inout) :: mass
+        real(rk), intent(inout) :: ddur
+        real(rk), dimension(6) :: temp_arr
+        character(len = 120), intent(in) :: fname
+        character(len = 1000) :: line
+        integer(ik) :: ios, dump1, dump2, i
+
+        open(1, file = fname, iostat = ios, action = 'read')
+        read(1, *, iostat = ios) dump1, dump2, ddur
+        read(1, *, iostat = ios) mass
+        read(1, *, iostat = ios) fstep, sstep
+
+        do i = 1, n
+            read(1, *, iostat = ios) temp_arr
+            ipos(i) = temp_arr(1:3)
+            ivel(i) = temp_arr(4:6)
+        end do
+
+        close(1)
+        write(6, '(a, a)') 'Initial parameters read from ', fname
+        write(6, *) '   Number of objects: ', n
+        write(6, *) '   Simulation steps: ', nstep
+        write(6, *) '   Simulation duration (days): ', ddur
+        write(6, *) '   Masses of objects (kg): ', mass
+        write(6, *) '   Feedback and saving done every ... step: ', fstep, sstep
+        write(6, *) '   Initial positions (cartesian, m):'
+        call prettyprint_vec_arr(ipos, n)
+        write(6, *) '   Initial velocities (cartesian, m/s): '
+        call prettyprint_vec_arr(ivel, n)
+
+    end subroutine read_sim_params
+
+    subroutine get_arr_dims(fname, n, m)
+        character(len = 120), intent(in) :: fname
+        integer(ik), intent(inout) :: n, m
+        integer(ik) :: ios
+
+        open(1, file = fname, iostat = ios, action = 'read')
+        read(1, *, iostat = ios) n, m
+        close(1)
+    end subroutine get_arr_dims
+
+    subroutine generic_ioerror_check(ios)
+        integer(ik), intent(in) :: ios
+
+        if (ios<0) then
+            write(6, *) 'End of File'
+            stop
+        end if
+    end subroutine generic_ioerror_check
 end module io_manager
