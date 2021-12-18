@@ -97,11 +97,11 @@ contains
     end function prepare_subdir
 
     ! saves a single simulation step to file by creating a new file or appending to the existing one
-    subroutine save_sim_step(last_pos, last_vel, last_acc, last_forces, epot, ekin, nbody, subdir_path)
+    subroutine save_sim_step(last_pos, last_vel, last_acc, last_forces, epot, ekin, time, nbody, subdir_path)
         character(len = 100), intent(in) :: subdir_path
         character(len = 200) :: saveloc
         type(vec), dimension(nbody), intent(in) :: last_pos, last_vel, last_acc, last_forces
-        real(rk), intent(in) :: epot, ekin
+        real(rk), intent(in) :: epot, ekin, time
         integer(ik), intent(in) :: nbody
         integer(ik) :: i, j, t, ios
         logical :: fstat
@@ -118,7 +118,7 @@ contains
                 write(6, '(a, a, a, i0)') 'Error while handling ', saveloc, ' Errorcode: ', ios
                 stop
             end if
-            write(1, *) last_pos(i), last_vel(i), last_acc(i), last_forces(i)
+            write(1, *) last_pos(i), last_vel(i), last_acc(i), last_forces(i), time
             close(1)
         end do
 
@@ -133,7 +133,7 @@ contains
             write(6, '(a, a, a, i0)') 'Error while handling ', saveloc, ' Errorcode: ', ios
             stop
         end if
-        write(1, *) epot, ekin
+        write(1, *) epot, ekin, time
         close(1)
 
     end subroutine save_sim_step

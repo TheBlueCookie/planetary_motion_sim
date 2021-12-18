@@ -19,7 +19,7 @@ contains
         character(len = 120), intent(in) :: parfile
         integer(ik), intent(inout) :: nbody, nstep, fstep, sstep
         real(rk), intent(inout) :: ddur, step
-        real(rk) :: sdur
+        real(rk) :: sdur, rkstep
 
         call get_arr_dims(parfile, nbody, nstep)
 
@@ -28,8 +28,9 @@ contains
 
         call read_sim_params(parfile, nbody, masses, pos(:, 1), vel(:, 1), ddur, fstep, sstep, nstep)
 
-        !        sdur = ddur * sec_per_day
-        step = ddur ! / nstep_rk
+        sdur = ddur * sec_per_day
+        rkstep = nstep
+        step = sdur / rkstep
 
         write(6, *) 'Initialized simulation.'
         init_status = .true.
@@ -89,7 +90,8 @@ contains
             pot_en(m) = pot_energy(dists_temp, mass_matrix, nbody)
 
             if (modulo(m, savestep) == 0) then
-                call save_sim_step(pos(:, m), vel(:, m), acc(:, m), forces(:, m), kin_en(m), pot_en(m), nbody, dirpath)
+                call save_sim_step(pos(:, m), vel(:, m), acc(:, m), forces(:, m), kin_en(m), pot_en(m), step * m, &
+                        nbody, dirpath)
             end if
 
             if (modulo(m, fstep) == 0) then
