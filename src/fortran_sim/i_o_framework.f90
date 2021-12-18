@@ -89,7 +89,8 @@ contains
         integer(ik) :: t
 
         t = time()
-        write(dirpath, '(a, a, a, a, a, a, i0)') '..', path_sep, 'run', path_sep, 'data', path_sep, t
+        write(dirpath, '(a, a, a, a, a, a, a, a, i0)') '..', path_sep, '..', path_sep, 'run', path_sep, 'data', &
+                path_sep, t
         write(cmd, '(a, a)') 'mkdir ', trim(dirpath)
         call system(cmd)
         write(temp_dump, *) 'Created save directory: ', trim(dirpath)
