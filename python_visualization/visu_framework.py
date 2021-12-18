@@ -10,9 +10,10 @@ def read_sim_data(subdir_path: str):
         fname = os.path.join(subdir_path, fname)
         data.append(pd.read_csv(fname, sep='\\s+', header=None,
                                 names=['posx', 'posy', 'posz', 'velx', 'vely', 'velz', 'accx', 'accy', 'accz', 'forx',
-                                       'fory', 'forz']))
+                                       'fory', 'forz', 'time']))
 
-    energies = pd.read_csv(os.path.join(subdir_path, files[-1]), sep='\\s+', header=None, names=['epot', 'ekin'])
+    energies = pd.read_csv(os.path.join(subdir_path, files[-1]), sep='\\s+', header=None,
+                           names=['epot', 'ekin', 'time'])
     return data, energies
 
 
@@ -24,8 +25,9 @@ def plot_2d_trajectories(planet_data: pd.DataFrame, ax):
     ax.plot(planet_data.posx, planet_data.posy)
 
 
-def planet_motion_with_trace(i, scat, lines, data, trace_lens, dim):
+def planet_motion_with_trace(i, scat, lines, data, trace_lens, dim, fig, time):
     print(f'\r{i}', end='')
+    fig.suptitle(f'time = {(time[i] / (3600 * 24)):.2f} earth days')
     if dim == 2:
         scat.set_offsets(data[0:8, :, i])
     elif dim == 3:
@@ -53,11 +55,6 @@ def update_traced_line(i, data, line, ind, trace_lens, dim):
             line.set_3d_properties(data[2, i - trace_len:i])
 
 
-def init_2dlines(lines):
+def init_lines(lines):
     for line in lines:
         line.set_data([], [])
-
-
-def init_3dlines(lines):
-    for line in lines:
-        line.set_data([], [], [])
