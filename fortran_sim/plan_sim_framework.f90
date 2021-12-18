@@ -3,7 +3,8 @@ module plan_sim
     use io_manager
 
     type(vec), dimension(:, :), allocatable :: pos, vel, acc, forces
-    real(rk), dimension(:), allocatable :: masses
+    real(rk), dimension(:), allocatable :: masses, pot_en, kin_en
+    real(rk), dimension(:, :), allocatable :: dists_temp
     real(rk) :: step, d_dur
     integer(ik) :: n_step, n_body, f_step, s_step, savestep
 
@@ -22,11 +23,12 @@ contains
 
         call get_arr_dims(parfile, nbody, nstep)
 
-        allocate(pos(nbody, nstep), vel(nbody, nstep), acc(nbody, nstep), forces(nbody, nstep), masses(nstep))
+        allocate(pos(nbody, nstep), vel(nbody, nstep), acc(nbody, nstep), forces(nbody, nstep), &
+                masses(nbody), pot_en(nstep), kin_en(nstep), dists_temp(nbody, nbody))
 
         call read_sim_params(parfile, nbody, masses, pos(:, 1), vel(:, 1), ddur, fstep, sstep, nstep)
 
-!        sdur = ddur * sec_per_day
+        !        sdur = ddur * sec_per_day
         step = ddur ! / nstep_rk
 
         write(6, *) 'Initialized simulation.'
@@ -71,6 +73,9 @@ contains
         scal_dists_inv = calc_scalar_distances_inv(dist_vecs, nbody)
         force_vecs = calc_forces(dist_vecs, scal_dists_inv, mass_matrix, nbody)
 
+        kin_en(1) = kin_energy(ivel, masses, nbody)
+        pot_en(1) = pot_energy(scal_dists_inv, mass_matrix, nbody)
+
         do i = 1, nbody
             pos(i, 1) = ipos(i)
             vel(i, 1) = ivel(i)
@@ -80,12 +85,16 @@ contains
 
         do m = 2, nstep
             call verlet_step(m)
-                        if (modulo(m, savestep) == 0) then
-                            call save_sim_step(pos(:, m), vel(:, m), acc(:, m), forces(:, m), nbody, dirpath)
-                        end if
-                        if (modulo(m, fstep) == 0) then
-                            call print_sim_info(pos(:, m), nbody, nstep, m, step, savestep)
-                        end if
+            kin_en(m) = kin_energy(vel(:, m), masses, nbody)
+            pot_en(m) = pot_energy(dists_temp, mass_matrix, nbody)
+
+            if (modulo(m, savestep) == 0) then
+                call save_sim_step(pos(:, m), vel(:, m), acc(:, m), forces(:, m), kin_en(m), pot_en(m), nbody, dirpath)
+            end if
+
+            if (modulo(m, fstep) == 0) then
+                call print_sim_info(pos(:, m), nbody, nstep, m, step, savestep)
+            end if
         end do
 
     contains
@@ -101,6 +110,7 @@ contains
 
             dist_vecs = calc_distance_vecs(pos(:, j), nbody)
             scal_dists_inv = calc_scalar_distances_inv(dist_vecs, nbody)
+            dists_temp = scal_dists_inv
             forces(:, j) = calc_forces(dist_vecs, scal_dists_inv, mass_matrix, nbody)
 
             do i = 1, nbody
