@@ -108,7 +108,7 @@ contains
         logical :: fstat
 
         do i = 1, nbody
-            write(saveloc, '(a, a, a, i0, a)') trim(subdir_path), path_sep, 'body_', i, '.txt'
+            write(saveloc, '(a, a, a, i0.2, a)') trim(subdir_path), path_sep, 'body_', i, '.txt'
             inquire(file = saveloc, exist = fstat)
             if (fstat) then
                 open(1, file = saveloc, iostat = ios, action = 'write', status = 'old', position = 'append')
