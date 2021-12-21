@@ -10,11 +10,11 @@ Compile the main program using one of three options:
 
 (2) manually compile to modules, then combine in final compilation step. run the following commands in `/src/fortran_sim`:
 
-`gfortran -o vector_framework.o -c vector_framework.f90\
-gfortran -o i_o_framework.o -c i_o_framework.f90\
-gfortran -o plan_sim_framework.o -c plan_sim_framework.f90\
-gfortran -o simulation_starting.o -c simulation_starting.f90\
-gfortran -o start_sim.out vector_framework.o i_o_framework.o plan_sim_framework.o simulation_starting.o`
+`gfortran -o vector_framework.o -c vector_framework.f90`\
+`gfortran -o i_o_framework.o -c i_o_framework.f90`\
+`gfortran -o plan_sim_framework.o -c plan_sim_framework.f90`\
+`gfortran -o simulation_starting.o -c simulation_starting.f90`\
+`gfortran -o start_sim.out vector_framework.o i_o_framework.o plan_sim_framework.o simulation_starting.o`
 
 (3) compile all at once, run the following command in `/src/fortran_sim:`
 
