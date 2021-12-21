@@ -6,7 +6,7 @@ By Elias Ankerhold
 COMPILATION:
 Compile the main program using one of three options:
 
-(1) run "make" in the main directory where Makefile is located -->  /src/fortran_sim/sim.out will be created
+(1) run "make" in the main directory where Makefile is located -->  /src/fortran_sim/sim_start.out will be created
 
 (2) manually compile to modules, then combine in final compilation step. run the following commands in /src/fortran_sim:
 
