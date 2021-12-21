@@ -38,7 +38,7 @@ fig_3d, ax_3d = plt.subplots(subplot_kw={"projection": "3d"}, figsize=(12, 12))
 
 moon = False
 save_anim = False
-dat_ind = 33
+dat_ind = 10
 sel_inds = [0, 5] #[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 spacing_fac = 1.03
 rv_ind = 1

@@ -1,5 +1,5 @@
 program sim_preperation
-    use plan_sim
+    use vectors
     implicit none
 
     integer(ik), parameter :: body_count = 10 - 1
