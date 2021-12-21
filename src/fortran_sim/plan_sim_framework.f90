@@ -2,19 +2,23 @@ module plan_sim
     use vectors
     use io_manager
 
+    ! global variables storing simulation results and parameters
     type(vec), dimension(:, :), allocatable :: pos, vel, acc, forces
     real(rk), dimension(:), allocatable :: masses, pot_en, kin_en
     real(rk), dimension(:, :), allocatable :: dists_temp
     real(rk) :: step, d_dur
-    integer(ik) :: n_step, n_body, f_step, s_step, savestep
+    integer(ik) :: n_step, n_body, f_step, s_step
 
+    ! initialization marker
     logical :: init_status = .false.
 
+    ! gravitational constant and seconds in a day
     real(rk), parameter :: g = 6.67430e-11 ! https://physics.nist.gov/cgi-bin/cuu/Value?bg
     real(rk), parameter :: sec_per_day = 24 * 3600
 
 contains
 
+    ! reads simulation params from file and allocates arrays accordingly
     subroutine initialize_sim(parfile, nbody, nstep, fstep, sstep, step, ddur)
         character(len = 120), intent(in) :: parfile
         integer(ik), intent(inout) :: nbody, nstep, fstep, sstep
@@ -32,10 +36,12 @@ contains
         rkstep = nstep
         step = sdur / rkstep
 
-        write(6, *) 'Initialized simulation.'
+        call info('Initialized simulation.')
+
         init_status = .true.
     end subroutine initialize_sim
 
+    ! computes a matrix of masses where m_ij = m_i * m_j
     function get_mass_matrix(masses, nbody) result(mass_mat)
         real(rk), dimension(nbody), intent(in) :: masses
         integer(ik), intent(in) :: nbody
@@ -56,6 +62,7 @@ contains
     end function get_mass_matrix
 
 
+    ! full Velocity Verlet algorithm
     subroutine vel_verlet(ipos, ivel, masses, step, nbody, nstep, savestep, fstep)
         type(vec), dimension(nbody), intent(in) :: ipos, ivel
         real(rk), dimension(nbody), intent(in) :: masses
@@ -101,6 +108,7 @@ contains
 
     contains
 
+        ! single verlet step
         subroutine verlet_step(j)
             integer(ik), intent(in) :: j
             integer(ik) :: i
@@ -122,6 +130,7 @@ contains
         end subroutine verlet_step
     end subroutine vel_verlet
 
+    ! calculates the resulting forces acting on all bodies
     function calc_forces(vec_dists, scal_dists, mass_mat, nbody) result(res_forces)
         type(vec), dimension(nbody, nbody), intent(in) :: vec_dists
         real(rk), dimension(nbody, nbody), intent(in) :: scal_dists, mass_mat
@@ -139,6 +148,7 @@ contains
         end do
     end function calc_forces
 
+    ! calculates total kinetic energy
     function kin_energy(ivel, masses, nbody) result(e_kin)
         type(vec), dimension(nbody), intent(in) :: ivel
         real(rk), dimension(nbody), intent(in) :: masses
@@ -153,6 +163,7 @@ contains
         end do
     end function kin_energy
 
+    ! calculates total potential energy
     function pot_energy(dists, mass_mat, nbody) result(e_pot)
         real(rk), dimension(nbody, nbody), intent(in) :: dists, mass_mat
         integer(ik), intent(in) :: nbody
@@ -161,6 +172,8 @@ contains
         e_pot = 0.5 * g * sum(matmul(mass_mat, dists ** 2))
     end function pot_energy
 
+    ! calculates a n x n matrix of all inverse scalar distances between all bodies from their vectorial distances
+    ! r_ij = r_ji = 1/norm(r_i - r_j) and r_ii = 0
     function calc_scalar_distances_inv(vec_dists, nbody) result(distances)
         type(vec), dimension(nbody, nbody), intent(in) :: vec_dists
         integer(ik), intent(in) :: nbody
@@ -180,6 +193,8 @@ contains
         end do
     end function calc_scalar_distances_inv
 
+    ! calculates a n x n matrix of all vectorial distances between all bodies from their positions
+    ! r_ij = - r_ji = r_i - r_j
     function calc_distance_vecs(ipos, nbody) result(dist_vecs)
         type(vec), dimension(nbody), intent(in) :: ipos
         integer(ik), intent(in) :: nbody
