@@ -1,5 +1,8 @@
 import os
 import pandas as pd
+import numpy as np
+from scipy.signal import find_peaks, argrelmin
+from scipy.optimize import curve_fit
 
 
 def read_sim_data(subdir_path: str):
@@ -58,3 +61,40 @@ def update_traced_line(i, data, line, ind, trace_lens, dim):
 def init_lines(lines):
     for line in lines:
         line.set_data([], [])
+
+
+def get_orbital_periods_fft(r_data, time):
+    orb_periods = np.zeros(len(r_data))
+    for i, dat in enumerate(r_data):
+        r_fft = np.abs(np.fft.fft(dat))
+        peaks = find_peaks(r_fft)
+        if not peaks[0].size == 0:
+            orb_periods[i] = peaks[0][0]
+        else:
+            orb_periods[i] = np.nan
+
+    orb_periods = 1 / (orb_periods * 24 * 3600) * np.max(time)
+
+    return orb_periods
+
+
+def get_orbital_periods_avg_mins(r_data, time):
+    orb_periods = np.zeros(len(r_data))
+    min_inds = []
+    for i, dat in enumerate(r_data):
+        extrema = argrelmin(dat)
+        if not extrema[0].size == 0:
+            ex_days = list(time[list(extrema[0])] / (24 * 3600))
+            min_inds.append(ex_days)
+            periods = [np.abs(p - ex_days[i + 1]) for i, p in enumerate(ex_days[:-1])]
+            orb_periods[i] = np.mean(periods)
+        else:
+            min_inds.append([])
+            orb_periods[i] = np.nan
+
+    return orb_periods, min_inds
+
+
+def get_linear_drift(r_data, time):
+    popt, pcov = curve_fit(lambda x, a, b: a * x + b, time, r_data)
+    return popt, pcov
